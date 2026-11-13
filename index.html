@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Дневник сна</title>
+<meta name="theme-color" content="#ECEEF5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12152A" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌙%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #ECEEF5;
+  --surface: #FFFFFF;
+  --ink: #20254A;
+  --muted: #62688C;
+  --line: #D3D7E6;
+  --sleep: #3B4291;
+  --awake: #E39A2D;
+  --rest: #C5CAE4;
+  --ok: #2B7F71;
+  --danger: #B0433A;
+  --on-ink: #FFFFFF;
+  --tab-h: 58px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #12152A;
+    --surface: #1C2040;
+    --ink: #E8EAF6;
+    --muted: #9CA2C6;
+    --line: #313762;
+    --sleep: #8E98F0;
+    --awake: #F0B455;
+    --rest: #394072;
+    --ok: #62C0AE;
+    --danger: #EC8A80;
+    --on-ink: #12152A;
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 16px/1.4 Onest, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-variant-numeric: tabular-nums;
+  -webkit-tap-highlight-color: transparent;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--sleep); outline-offset: 2px; }
+[hidden] { display: none !important; }
+
+.app {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) 18px calc(env(safe-area-inset-bottom, 0px) + var(--tab-h) + 96px);
+}
+
+/* Шапка */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; }
+.brand { font-weight: 600; font-size: 15px; }
+.syncbadge {
+  border: 0; background: none; padding: 6px 0 6px 10px; font-size: 13px; color: var(--muted);
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.syncbadge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.syncbadge[data-state="ok"]::before { background: var(--ok); }
+.syncbadge[data-state="wait"]::before { background: var(--awake); }
+
+h1 { font-size: 25px; line-height: 1.15; font-weight: 600; letter-spacing: -0.015em; margin: 0; }
+h2 { font-size: 19px; line-height: 1.2; font-weight: 600; margin: 34px 0 4px; }
+.daynav + h2 { margin-top: 26px; }
+
+/* Навигация по дням */
+.daynav { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+.daytitle { flex: 1; min-width: 0; }
+.daytitle p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.round {
+  flex: none; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line);
+  background: var(--surface); display: grid; place-items: center;
+}
+.round:disabled { opacity: .35; cursor: default; }
+.round svg { width: 18px; height: 18px; }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--sleep); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Полоса ночи */
+.night h2 { margin-bottom: 12px; }
+.band { position: relative; height: 48px; border-radius: 12px; background: var(--rest); overflow: hidden; }
+.band i { position: absolute; top: 0; bottom: 0; display: block; }
+.band .s { background: var(--sleep); }
+.band .a { background: var(--awake); }
+.ends { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-top: 6px; }
+.cap { margin: 8px 0 0; font-size: 15px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend span::before { content: ""; width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
+
+/* Вопросы */
+.secnote { margin: 0 0 4px; color: var(--muted); font-size: 14px; }
+.q { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.qrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ql { flex: 1; min-width: 0; font-weight: 500; }
+.qn { color: var(--muted); font-weight: 400; margin-right: 8px; }
+.qhint { display: block; color: var(--muted); font-size: 13px; font-weight: 400; margin-top: 2px; }
+.detail { margin-top: 12px; }
+
+.seg { flex: none; display: inline-flex; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); overflow: hidden; }
+.seg button { border: 0; background: none; min-width: 60px; height: 44px; padding: 0 14px; font-weight: 500; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+
+input[type="time"], input[type="date"], input[type="text"], input[type="url"], input[type="number"], select, textarea {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 11px; min-height: 44px; padding: 8px 12px;
+  -webkit-appearance: none; appearance: none;
+}
+input[type="time"] { flex: none; min-width: 124px; width: auto; padding: 8px 10px; text-align: center; font-size: 18px; font-weight: 600; }
+input[type="text"], input[type="url"], textarea { width: 100%; }
+textarea { display: block; resize: vertical; line-height: 1.35; }
+select { padding-right: 30px; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; font-size: 18px; font-weight: 600; }
+
+.num { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.num input { width: 84px; text-align: center; font-size: 18px; font-weight: 600; -moz-appearance: textfield; }
+.num input::-webkit-outer-spin-button, .num input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.num .unit { color: var(--muted); min-width: 30px; }
+.step { flex: none; width: 44px; height: 44px; border-radius: 11px; border: 1px solid var(--line); background: var(--surface); font-size: 22px; line-height: 1; }
+.chips { display: flex; gap: 8px; margin-top: 10px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chips button { flex: none; border: 1px solid var(--line); background: none; border-radius: 999px; min-width: 46px; height: 36px; padding: 0 12px; color: var(--muted); font-weight: 500; }
+.chips button[aria-pressed="true"] { border-color: var(--ink); color: var(--ink); }
+
+.sub { margin: 14px 0 0; font-size: 14px; color: var(--muted); }
+.sub:first-child { margin-top: 0; }
+.sub + .num { margin-top: 6px; }
+.dur { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.dur select { width: 84px; }
+.dur span { color: var(--muted); margin-right: 8px; }
+
+.scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; }
+.scale button { height: 48px; border-radius: 11px; border: 1px solid var(--line); background: var(--surface); font-size: 18px; font-weight: 600; }
+.scale button[aria-pressed="true"] { background: var(--sleep); border-color: var(--sleep); color: var(--on-ink); }
+.scalecap { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+
+.status { margin: 16px 0 0; font-size: 14px; color: var(--muted); }
+
+/* Кнопки */
+.btn {
+  display: block; width: 100%; min-height: 50px; border-radius: 13px; border: 1px solid var(--ink);
+  background: var(--ink); color: var(--on-ink); font-weight: 600; font-size: 16px; padding: 0 16px;
+}
+.btn:disabled { opacity: .6; cursor: default; }
+.btn.quiet { background: var(--surface); color: var(--ink); border-color: var(--line); }
+.btn.danger { background: none; color: var(--danger); border-color: var(--danger); }
+.btnstack { display: grid; gap: 10px; margin-top: 14px; }
+
+.savebar {
+  position: fixed; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + var(--tab-h));
+  padding: 18px 18px 12px; background: linear-gradient(to top, var(--bg) 62%, transparent); z-index: 5;
+}
+.savebar .btn { max-width: 484px; margin: 0 auto; }
+
+.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--surface); border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom, 0px); display: flex; justify-content: center;
+}
+.tabs button { flex: 1; max-width: 174px; height: var(--tab-h); border: 0; background: none; color: var(--muted); font-weight: 500; font-size: 14px; position: relative; }
+.tabs button[aria-selected="true"] { color: var(--ink); font-weight: 600; }
+.tabs button[aria-selected="true"]::before { content: ""; position: absolute; top: -1px; left: 24%; right: 24%; height: 3px; border-radius: 0 0 3px 3px; background: var(--sleep); }
+
+.toast {
+  position: fixed; left: 18px; right: 18px; bottom: calc(env(safe-area-inset-bottom, 0px) + var(--tab-h) + 86px);
+  max-width: 484px; margin: 0 auto; background: var(--ink); color: var(--on-ink); border-radius: 12px; padding: 12px 14px;
+  font-size: 14px; z-index: 9; opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .2s, transform .2s;
+}
+.toast.show { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+
+/* Недели */
+.viewhead { margin-top: 16px; }
+.weekchips { display: flex; gap: 8px; margin-top: 16px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.weekchips::-webkit-scrollbar { display: none; }
+.weekchips button { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); font-weight: 600; }
+.weekchips button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
+.period { margin: 14px 0 0; color: var(--muted); font-size: 14px; }
+
+.bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 18px; }
+.bar { border: 0; background: none; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.bv { font-size: 12px; font-weight: 600; min-height: 16px; }
+.bt { position: relative; width: 100%; height: 112px; border-radius: 9px; }
+.bt i, .bt b { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 9px; display: block; }
+.bt i { background: var(--rest); }
+.bt b { background: var(--sleep); }
+.bt.none { border: 1.5px dashed var(--line); }
+.bd { font-size: 12px; color: var(--muted); line-height: 1.25; text-align: center; }
+.bar[aria-current="true"] .bd { color: var(--ink); font-weight: 600; }
+
+.effline { font-size: 22px; line-height: 1.2; font-weight: 600; letter-spacing: -0.01em; margin: 30px 0 12px; }
+.avgs { margin: 6px 0 0; }
+.avgs div { display: flex; justify-content: space-between; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.avgs dt { color: var(--muted); flex: 1; min-width: 0; }
+.avgs dd { margin: 0; font-weight: 600; text-align: right; max-width: 58%; }
+.avgs dd small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); }
+.trend { display: grid; grid-template-columns: repeat(var(--cols), 1fr); gap: 6px; margin-top: 14px; }
+.trend button { border: 0; background: none; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.tv { font-size: 12px; font-weight: 600; min-height: 16px; }
+.tt { position: relative; width: 100%; height: 96px; border-radius: 9px; background: var(--rest); overflow: hidden; }
+.tt.none { background: none; border: 1.5px dashed var(--line); }
+.tt b { position: absolute; left: 0; right: 0; bottom: 0; background: var(--sleep); display: block; }
+.tt::after { content: ""; position: absolute; left: 0; right: 0; bottom: 90%; border-top: 2px dashed var(--bg); }
+.td { font-size: 12px; color: var(--muted); }
+.trend button[aria-pressed="true"] .td { color: var(--ink); font-weight: 600; }
+.comments { margin: 10px 0 0; padding: 0; list-style: none; }
+.comments li { padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.comments b { font-weight: 600; margin-right: 6px; }
+.empty-note { margin: 22px 0 0; color: var(--muted); }
+
+/* Настройки */
+.note { margin: 6px 0 0; color: var(--muted); font-size: 14px; }
+.field { display: block; margin-top: 14px; font-weight: 500; }
+.field input { margin-top: 6px; font-weight: 400; }
+.field input[type="date"] { width: 100%; }
+.check { display: flex; align-items: center; gap: 12px; min-height: 48px; border-bottom: 1px solid var(--line); }
+.check input { width: 22px; height: 22px; accent-color: var(--sleep); flex: none; }
+details { margin-top: 14px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+summary { min-height: 48px; display: flex; align-items: center; font-weight: 500; cursor: pointer; }
+details ol { margin: 0 0 14px; padding-left: 22px; font-size: 15px; }
+details li { margin: 0 0 8px; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .92em; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <span class="brand">Дневник сна</span>
+    <button type="button" class="syncbadge" id="sync"></button>
+  </header>
+
+  <main>
+    <section id="view-day"></section>
+    <section id="view-weeks" hidden></section>
+
+    <section id="view-settings" hidden>
+      <h1 class="viewhead">Настройки</h1>
+
+      <h2>Google Таблица</h2>
+      <p class="note">Каждая сохранённая запись уходит строкой в вашу таблицу. Пока адрес не указан, дневник хранится только на этом телефоне.</p>
+      <label class="field" for="url">Адрес скрипта таблицы
+        <input id="url" type="url" inputmode="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off" autocapitalize="off" spellcheck="false">
+      </label>
+      <p class="note" id="urlStatus" role="status"></p>
+      <div class="btnstack">
+        <button type="button" class="btn quiet" id="testUrl">Проверить связь</button>
+        <button type="button" class="btn quiet" id="pushAll">Отправить все записи в таблицу</button>
+        <button type="button" class="btn quiet" id="pullAll">Загрузить записи из таблицы</button>
+      </div>
+      <details>
+        <summary>Как подключить таблицу</summary>
+        <ol>
+          <li>Создайте новую Google Таблицу.</li>
+          <li>В меню «Расширения» откройте «Apps Script». Удалите всё, что есть в редакторе, и вставьте код из файла <code>dnevnik-sna-script.gs</code>.</li>
+          <li>Выберите функцию <code>setup</code> и нажмите «Выполнить». Google попросит разрешить скрипту доступ к таблице: разрешите.</li>
+          <li>Нажмите «Начать развёртывание», затем «Новое развёртывание» и выберите тип «Веб-приложение». Запуск от имени: «Я». Доступ: «Все».</li>
+          <li>Скопируйте адрес веб-приложения (он заканчивается на <code>/exec</code>) и вставьте в поле выше.</li>
+          <li>Нажмите «Проверить связь».</li>
+        </ol>
+      </details>
+
+      <h2>Дневник</h2>
+      <label class="field" for="start">Первый день дневника
+        <input id="start" type="date">
+      </label>
+      <p class="note">От этой даты считаются дни и недели.</p>
+      <label class="check"><input type="checkbox" id="optCigs"> Спрашивать про сигареты (п. 3)</label>
+      <label class="check"><input type="checkbox" id="optPills"> Спрашивать про снотворное (п. 5)</label>
+
+      <h2>Копия дневника</h2>
+      <p class="note">Файл со всеми записями. Его можно отправить себе в Telegram или открыть в любой таблице.</p>
+      <div class="btnstack">
+        <button type="button" class="btn quiet" id="shareCsv">Поделиться файлом</button>
+        <button type="button" class="btn quiet" id="dlCsv">Скачать файл</button>
+      </div>
+
+      <h2>Этот телефон</h2>
+      <p class="note">Записи в Google Таблице останутся на месте.</p>
+      <div class="btnstack">
+        <button type="button" class="btn danger" id="wipe">Стереть дневник с этого телефона</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="savebar" id="savebar"><button type="button" class="btn" id="save">Сохранить</button></div>
+
+<nav class="tabs" role="tablist" aria-label="Разделы">
+  <button type="button" role="tab" data-tab="day" aria-selected="true">День</button>
+  <button type="button" role="tab" data-tab="weeks" aria-selected="false">Недели</button>
+  <button type="button" role="tab" data-tab="settings" aria-selected="false">Настройки</button>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- Хранилище ---------- */
+const KEY = 'sleepDiary.v1';
+const DEFAULTS = { url: '', start: '2026-11-14', cigs: false, pills: false };
+const TOTAL_DAYS = 56;
+
+function load() {
+  try {
+    const j = JSON.parse(localStorage.getItem(KEY));
+    if (j && j.entries) return { settings: Object.assign({}, DEFAULTS, j.settings), entries: j.entries };
+  } catch (err) { /* пустое или недоступное хранилище */ }
+  return { settings: Object.assign({}, DEFAULTS), entries: {} };
+}
+function persist() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch (err) { toast('Телефон не дал сохранить запись. Проверьте, не открыт ли приватный режим браузера'); }
+}
+let S = load();
+
+/* ---------- Даты и время ---------- */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const pad = n => String(n).padStart(2, '0');
+const iso = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const parse = s => { const p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); };
+const addDays = (s, n) => { const d = parse(s); d.setDate(d.getDate() + n); return iso(d); };
+const diffDays = (a, b) => Math.round((parse(a) - parse(b)) / 864e5);
+const today = () => iso(new Date());
+const dayNo = s => diffDays(s, S.settings.start) + 1;
+const weekOf = s => Math.ceil(dayNo(s) / 7);
+const maxDay = () => (today() > S.settings.start ? today() : S.settings.start);
+const clampDay = s => (s < S.settings.start ? S.settings.start : s > maxDay() ? maxDay() : s);
+const ru = s => { const p = s.split('-'); return p[2] + '.' + p[1] + '.' + p[0]; };
+const ruShort = s => ru(s).slice(0, 5);
+
+const DOW = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+const DOWF = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+const MON = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+const QUALITY = ['', 'очень плохой', 'плохой', 'средний', 'хороший', 'очень хороший'];
+
+const tmin = t => { const m = /^(\d{1,2}):(\d{2})/.exec(String(t || '').trim()); return m ? +m[1] * 60 + +m[2] : null; };
+const eve = m => (m < 720 ? m + 1440 : m);                       // вечернее время: после полуночи = следующие сутки
+const clock = m => { m = ((Math.round(m) % 1440) + 1440) % 1440; return pad(Math.floor(m / 60)) + ':' + pad(m % 60); };
+const hm = m => { m = Math.round(m); return Math.floor(m / 60) + ':' + pad(m % 60); };
+const hmWords = m => { m = Math.round(m); const h = Math.floor(m / 60), mm = m % 60; return ((h ? h + ' ч ' : '') + (mm || !h ? mm + ' мин' : '')).trim(); };
+const dec = v => String(Math.round(v * 10) / 10).replace('.', ',');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* Время в постели: от «легли» до «встали», с переходом через полночь */
+function tib(x) {
+  const b = tmin(x.bed), u = tmin(x.up);
+  if (b == null || u == null) return null;
+  let t = u + 1440 - eve(b);
+  if (t > 1440) t -= 1440;
+  return t > 0 ? t : null;
+}
+function eff(x) { const t = tib(x); return x.sleep != null && t ? x.sleep / t * 100 : null; }
+/* ---------- Запись одного утра ---------- */
+function blank() {
+  return { nap: null, napCnt: null, napMin: null, sport: null, sportTxt: '', cigs: null, alc: null, alcTxt: '', pills: null, pillsTxt: '',
+    bed: '', lights: '', sol: null, wakes: null, waso: null, wake: '', up: '', sleep: null, quality: null, comment: '', sync: '', updatedAt: '' };
+}
+function hasData(x) {
+  return !!(x.nap || x.sport || x.alc || x.pills || x.cigs != null || x.bed || x.lights || x.sol != null || x.wakes != null ||
+    x.waso != null || x.wake || x.up || x.sleep != null || x.quality != null || (x.comment && x.comment.trim()));
+}
+function missing(x) {
+  const m = [];
+  if (!x.nap || (x.nap === 'y' && x.napMin == null)) m.push(1);
+  if (!x.sport) m.push(2);
+  if (S.settings.cigs && x.cigs == null) m.push(3);
+  if (!x.alc) m.push(4);
+  if (S.settings.pills && !x.pills) m.push(5);
+  if (!x.bed) m.push(6);
+  if (!x.lights) m.push(7);
+  if (x.sol == null) m.push(8);
+  if (x.wakes == null) m.push(9);
+  if (x.waso == null) m.push(10);
+  if (!x.wake) m.push(11);
+  if (!x.up) m.push(12);
+  if (x.sleep == null) m.push(13);
+  if (x.quality == null) m.push(14);
+  return m;
+}
+
+const MIN_CHIPS = [5, 10, 15, 20, 30, 45, 60, 90];
+const Q = [
+  { sec: 'Вчера', note: 'О прошедшем дне.' },
+  { n: 1, id: 'nap', type: 'yn', label: 'Спали днём?', detail: 'nap' },
+  { n: 2, id: 'sport', type: 'yn', label: 'Спорт или физические упражнения?', hint: 'Ходьба тоже считается', detail: 'text', dId: 'sportTxt', ph: 'Например: плавание, 30 минут' },
+  { n: 3, id: 'cigs', type: 'num', label: 'Сколько сигарет выкурили?', unit: 'шт', step: 1, opt: 'cigs' },
+  { n: 4, id: 'alc', type: 'yn', label: 'Алкоголь?', detail: 'text', dId: 'alcTxt', ph: 'Например: пиво, 1 бутылка' },
+  { n: 5, id: 'pills', type: 'yn', label: 'Снотворное перед сном?', detail: 'text', dId: 'pillsTxt', ph: 'Название и доза', opt: 'pills' },
+  { sec: 'Ночь', note: 'О ночи, которая только что закончилась.' },
+  { n: 6, id: 'bed', type: 'time', label: 'Легли в кровать', hint: 'Когда только легли, а не когда начали засыпать' },
+  { n: 7, id: 'lights', type: 'time', label: 'Погасили свет и решили заснуть', hint: 'Когда начали пытаться заснуть' },
+  { n: 8, id: 'sol', type: 'num', label: 'Сколько времени засыпали', hint: 'Примерно, по ощущениям. Следить по часам не нужно', unit: 'мин', step: 5, chips: MIN_CHIPS },
+  { n: 9, id: 'wakes', type: 'num', label: 'Сколько раз просыпались ночью', hint: 'От первого засыпания до подъёма, не считая последнего утреннего пробуждения', unit: 'раз', step: 1 },
+  { n: 10, id: 'waso', type: 'num', label: 'Сколько длились пробуждения в сумме', hint: 'Сложите все ночные пробуждения, примерно. Вечернее засыпание сюда не входит', unit: 'мин', step: 5, chips: MIN_CHIPS },
+  { sec: 'Утро' },
+  { n: 11, id: 'wake', type: 'time', label: 'Окончательно проснулись', hint: 'После этого уже не засыпали' },
+  { n: 12, id: 'up', type: 'time', label: 'Встали с постели', hint: 'Встали и больше не ложились' },
+  { n: 13, id: 'sleep', type: 'dur', label: 'Сколько спали по ощущениям', hint: 'Примерно, по вашей оценке. Высчитывать не нужно' },
+  { n: 14, id: 'quality', type: 'scale', label: 'Качество сна', hint: 'По вашим ощущениям' },
+  { n: 15, id: 'comment', type: 'text', label: 'Комментарий', hint: 'Что повлияло на сон или дневное самочувствие', ph: 'Например: стресс, болезнь' }
+];
+
+const CH_L = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+const CH_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
+
+function numHTML(id, unit, step, chips) {
+  return `<div class="num">
+      <button type="button" class="step" data-step="${id}" data-d="-${step}" aria-label="Меньше">−</button>
+      <input type="number" inputmode="numeric" min="0" id="f-${id}" data-f="${id}" aria-label="Значение">
+      <span class="unit">${unit}</span>
+      <button type="button" class="step" data-step="${id}" data-d="${step}" aria-label="Больше">+</button>
+    </div>` +
+    (chips ? `<div class="chips">${chips.map(c => `<button type="button" data-chip="${id}" data-v="${c}">${c}</button>`).join('')}</div>` : '');
+}
+
+function rowHTML(q) {
+  if (q.sec) return `<h2>${q.sec}</h2>${q.note ? `<p class="secnote">${q.note}</p>` : ''}`;
+  if (q.opt && !S.settings[q.opt]) return '';
+  const label = `<span class="ql"><span class="qn">${q.n}</span>${q.label}${q.hint ? `<span class="qhint">${q.hint}</span>` : ''}</span>`;
+  let body = '';
+  if (q.type === 'yn') {
+    const detail = q.detail === 'nap'
+      ? `<p class="sub">Сколько раз</p>${numHTML('napCnt', 'раз', 1)}<p class="sub">Сколько минут в сумме</p>${numHTML('napMin', 'мин', 5, [15, 20, 30, 45, 60, 90])}`
+      : `<input type="text" id="f-${q.dId}" data-f="${q.dId}" placeholder="${q.ph}" aria-label="${q.ph}" autocomplete="off">`;
+    body = `<div class="qrow">${label}
+        <div class="seg" role="group" aria-label="${q.label}">
+          <button type="button" data-set="${q.id}" data-v="n">Нет</button><button type="button" data-set="${q.id}" data-v="y">Да</button>
+        </div></div>
+      <div class="detail" data-detail="${q.id}" hidden>${detail}</div>`;
+  } else if (q.type === 'time') {
+    body = `<label class="qrow" for="f-${q.id}">${label}<input type="time" id="f-${q.id}" data-f="${q.id}"></label>`;
+  } else if (q.type === 'num') {
+    body = `<div class="qrow">${label}</div>${numHTML(q.id, q.unit, q.step, q.chips)}`;
+  } else if (q.type === 'dur') {
+    const hours = ['<option value="">—</option>'].concat(Array.from({ length: 15 }, (_, h) => `<option value="${h}">${h}</option>`)).join('');
+    const mins = Array.from({ length: 12 }, (_, i) => `<option value="${i * 5}">${pad(i * 5)}</option>`).join('');
+    body = `<div class="qrow">${label}</div>
+      <div class="dur"><select id="durH" aria-label="Часы">${hours}</select><span>ч</span><select id="durM" aria-label="Минуты">${mins}</select><span>мин</span></div>`;
+  } else if (q.type === 'scale') {
+    body = `<div class="qrow">${label}</div>
+      <div class="scale" role="group" aria-label="${q.label}">${[1, 2, 3, 4, 5].map(v => `<button type="button" data-set="quality" data-v="${v}" aria-label="${v}, ${QUALITY[v]}">${v}</button>`).join('')}</div>
+      <p class="scalecap" id="scalecap"></p>`;
+  } else {
+    body = `<label class="qrow" for="f-${q.id}">${label}</label>
+      <div class="detail"><textarea id="f-${q.id}" data-f="${q.id}" rows="3" placeholder="${q.ph}"></textarea></div>`;
+  }
+  return `<div class="q">${body}</div>`;
+}
+
+/* ---------- Полоса ночи ---------- */
+function bandHTML(x) {
+  const b = tmin(x.bed), u = tmin(x.up), T = tib(x);
+  if (T == null || x.sleep == null) return '';
+  const off = t => (((t - b) % 1440) + 1440) % 1440;
+  const lights = tmin(x.lights), wake = tmin(x.wake);
+  let L = lights == null ? 0 : Math.min(off(lights), T);
+  let W = wake == null ? T : Math.min(off(wake), T);
+  if (W < L) W = T;
+  const sol = Math.min(x.sol || 0, W - L);
+  const sleepStart = L + sol, span = W - sleepStart;
+  const pc = v => (v / T * 100).toFixed(2) + '%';
+  let segs = '';
+  if (sol > 0) segs += `<i class="a" style="left:${pc(L)};width:${pc(sol)}"></i>`;
+  if (span > 0) {
+    segs += `<i class="s" style="left:${pc(sleepStart)};width:${pc(span)}"></i>`;
+    const waso = Math.min(x.waso || 0, span);
+    const n = Math.min(x.wakes > 0 ? x.wakes : waso > 0 ? 1 : 0, 12);
+    if (n > 0 && waso > 0) {
+      const each = waso / n;
+      for (let i = 0; i < n; i++) {
+        const c = sleepStart + span * (i + 1) / (n + 1);
+        segs += `<i class="a" style="left:${pc(Math.max(sleepStart, c - each / 2))};width:${pc(each)}"></i>`;
+      }
+    }
+  }
+  const e1 = eff(x);
+  const cap = `В постели ${hmWords(T)}, из них сон ${hmWords(x.sleep)}. Эффективность сна ${Math.round(e1)}%`;
+  return `<h2>Ночь целиком</h2><div class="band" role="img" aria-label="${cap}">${segs}</div>
+    <div class="ends"><span>${clock(b)}</span><span>${clock(u)}</span></div>
+    <p class="cap">${cap}</p>
+    <div class="legend"><span style="--c:var(--sleep)">сон</span><span style="--c:var(--awake)">не спали</span><span style="--c:var(--rest)">в постели без сна</span></div>`;
+}
+
+/* ---------- Экран дня ---------- */
+let cur = clampDay(today());
+let e = S.entries[cur] || blank();
+let shownToday = today();
+const dayView = $('#view-day');
+
+function openDay(d) {
+  cur = clampDay(d);
+  e = S.entries[cur] || blank();
+  renderDay();
+  window.scrollTo(0, 0);
+}
+
+function renderDay() {
+  const d = parse(cur), n = dayNo(cur), t = today();
+  let sub = n <= TOTAL_DAYS ? `День ${n} из ${TOTAL_DAYS}, неделя ${weekOf(cur)}` : `День ${n}, неделя ${weekOf(cur)}`;
+  if (t < S.settings.start) sub = `Дневник начинается ${parse(S.settings.start).getDate()} ${MON[parse(S.settings.start).getMonth()]}. ` + sub;
+  const back = cur !== clampDay(t) ? ` <button type="button" class="linkbtn" id="goToday">К сегодняшнему дню</button>` : '';
+  dayView.innerHTML = `
+    <div class="daynav">
+      <button type="button" class="round" id="prev" aria-label="Предыдущий день" ${cur <= S.settings.start ? 'disabled' : ''}>${CH_L}</button>
+      <div class="daytitle"><h1>${DOWF[d.getDay()]}, ${d.getDate()} ${MON[d.getMonth()]}</h1><p>${sub}${back}</p></div>
+      <button type="button" class="round" id="next" aria-label="Следующий день" ${cur >= maxDay() ? 'disabled' : ''}>${CH_R}</button>
+    </div>
+    ${Q.map(rowHTML).join('')}
+    <div class="night" id="night"></div>
+    <p class="status" id="status"></p>`;
+  $$('[data-f]', dayView).forEach(el => { const v = e[el.dataset.f]; el.value = v == null ? '' : v; });
+  refresh();
+}
+
+function refresh() {
+  $$('[data-set]', dayView).forEach(b => b.setAttribute('aria-pressed', String(e[b.dataset.set]) === b.dataset.v ? 'true' : 'false'));
+  $$('[data-detail]', dayView).forEach(el => { el.hidden = e[el.dataset.detail] !== 'y'; });
+  $$('input[type="number"][data-f]', dayView).forEach(el => {
+    if (el !== document.activeElement) { const v = e[el.dataset.f]; el.value = v == null ? '' : v; }
+  });
+  $$('[data-chip]', dayView).forEach(b => b.setAttribute('aria-pressed', e[b.dataset.chip] === +b.dataset.v ? 'true' : 'false'));
+
+  const h = $('#durH'), m = $('#durM');
+  if (h && m) {
+    if (e.sleep == null) { h.value = ''; m.value = '0'; }
+    else {
+      const mm = String(e.sleep % 60);
+      if (!$$('option', m).some(o => o.value === mm)) m.insertAdjacentHTML('beforeend', `<option value="${mm}">${pad(mm)}</option>`);
+      h.value = String(Math.floor(e.sleep / 60)); m.value = mm;
+    }
+  }
+  const cap = $('#scalecap');
+  if (cap) cap.textContent = e.quality ? `${e.quality} из 5: ${QUALITY[e.quality]}` : '1 — очень плохой, 5 — очень хороший';
+
+  $('#night').innerHTML = bandHTML(e);
+
+  const st = [];
+  if (hasData(e)) {
+    const miss = missing(e);
+    if (miss.length) st.push('Без ответа: п. ' + miss.join(', '));
+    st.push({ draft: S.settings.url ? 'Изменения пока только на телефоне' : 'Изменения записаны на телефоне',
+      pending: 'Запись ждёт отправки в таблицу', sent: 'Запись в таблице', local: 'Запись сохранена на телефоне' }[e.sync] || '');
+  }
+  $('#status').textContent = st.filter(Boolean).join('. ');
+
+  const btn = $('#save');
+  if (!btn.disabled) {
+    btn.textContent = e.sync === 'sent' ? 'Сохранено в таблицу' : e.sync === 'local' ? 'Сохранено на телефоне'
+      : e.sync === 'pending' ? 'Отправить в таблицу ещё раз' : S.settings.url ? 'Сохранить в таблицу' : 'Сохранить';
+    btn.classList.toggle('quiet', e.sync === 'sent' || e.sync === 'local');
+  }
+  refreshBadge();
+}
+
+function touch() {
+  e.sync = 'draft';
+  e.updatedAt = new Date().toISOString();
+  S.entries[cur] = e;
+  persist();
+  refresh();
+}
+function afterNum(f) { if (f === 'wakes' && e.wakes === 0 && e.waso == null) e.waso = 0; }
+
+dayView.addEventListener('click', ev => {
+  const b = ev.target.closest('button');
+  if (!b) return;
+  if (b.id === 'prev') return openDay(addDays(cur, -1));
+  if (b.id === 'next') return openDay(addDays(cur, 1));
+  if (b.id === 'goToday') return openDay(today());
+  if (b.dataset.set) {
+    const f = b.dataset.set, v = f === 'quality' ? +b.dataset.v : b.dataset.v;
+    e[f] = e[f] === v ? null : v;
+    if (f === 'nap' && e.nap === 'y' && e.napCnt == null) e.napCnt = 1;
+    return touch();
+  }
+  if (b.dataset.step) {
+    const f = b.dataset.step;
+    e[f] = Math.max(0, (e[f] || 0) + +b.dataset.d);
+    afterNum(f);
+    return touch();
+  }
+  if (b.dataset.chip) { e[b.dataset.chip] = +b.dataset.v; return touch(); }
+});
+dayView.addEventListener('input', ev => {
+  const el = ev.target, f = el.dataset.f;
+  if (!f) return;
+  if (el.type === 'number') { e[f] = el.value === '' ? null : Math.max(0, Math.round(+el.value) || 0); afterNum(f); }
+  else e[f] = el.value;
+  touch();
+});
+dayView.addEventListener('change', ev => {
+  if (ev.target.id !== 'durH' && ev.target.id !== 'durM') return;
+  const h = $('#durH').value, m = +$('#durM').value;
+  if (ev.target.id === 'durM' && h === '') e.sleep = m ? m : null;
+  else e.sleep = h === '' ? null : +h * 60 + m;
+  touch();
+});
+
+/* ---------- Отправка в таблицу ---------- */
+function toRow(d, x) {
+  const yn = (v, t) => (v === 'n' ? 'нет' : v === 'y' ? (t && t.trim() ? 'да: ' + t.trim() : 'да') : '');
+  const T = tib(x), ef = eff(x), v = n => (n == null ? '' : n);
+  return {
+    date: d, dow: DOW[parse(d).getDay()], day: dayNo(d), week: weekOf(d),
+    nap: x.nap === 'n' ? 0 : x.nap === 'y' ? (x.napMin != null ? x.napMin : 'да') : '',
+    napCnt: x.nap === 'n' ? 0 : x.nap === 'y' ? v(x.napCnt) : '',
+    sport: yn(x.sport, x.sportTxt),
+    cigs: S.settings.cigs ? v(x.cigs) : '',
+    alcohol: yn(x.alc, x.alcTxt),
+    pills: S.settings.pills ? yn(x.pills, x.pillsTxt) : '',
+    bed: x.bed || '', lights: x.lights || '', sol: v(x.sol), wakes: v(x.wakes), waso: v(x.waso),
+    wake: x.wake || '', up: x.up || '', sleep: x.sleep != null ? hm(x.sleep) : '', quality: v(x.quality),
+    comment: (x.comment || '').trim(), sleepMin: v(x.sleep), tibMin: v(T), eff: ef != null ? Math.round(ef * 10) / 10 : '',
+    updated: x.updatedAt || ''
+  };
+}
+function fromRow(r) {
+  const x = blank();
+  const num = v => { const s = String(v == null ? '' : v).replace(',', '.').trim(); return /^\d+(\.\d+)?$/.test(s) ? Math.round(parseFloat(s)) : null; };
+  const yn = v => {
+    const s = String(v == null ? '' : v).trim(), l = s.toLowerCase();
+    if (!s) return [null, ''];
+    if (l === 'нет' || l === '0' || l === '-' || l === '—') return ['n', ''];
+    return ['y', l === 'да' ? '' : s.replace(/^да:\s*/i, '')];
+  };
+  const tm = v => { const m = tmin(v); return m == null ? '' : clock(m); };
+  const nap = num(r.nap);
+  if (nap != null) { x.nap = nap > 0 ? 'y' : 'n'; x.napMin = nap > 0 ? nap : null; }
+  else if (String(r.nap || '').trim()) x.nap = 'y';
+  if (x.nap === 'y') x.napCnt = num(r.napCnt);
+  [x.sport, x.sportTxt] = yn(r.sport);
+  [x.alc, x.alcTxt] = yn(r.alcohol);
+  [x.pills, x.pillsTxt] = yn(r.pills);
+  x.cigs = num(r.cigs);
+  x.bed = tm(r.bed); x.lights = tm(r.lights); x.wake = tm(r.wake); x.up = tm(r.up);
+  x.sol = num(r.sol); x.wakes = num(r.wakes); x.waso = num(r.waso);
+  x.sleep = tmin(r.sleep);
+  const q = num(r.quality); x.quality = q >= 1 && q <= 5 ? q : null;
+  x.comment = String(r.comment || '');
+  x.sync = 'sent'; x.updatedAt = String(r.updated || '');
+  return x;
+}
+
+async function post(rows) {
+  const res = await fetch(S.settings.url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },   // так браузер отправляет запрос без предварительной проверки
+    body: JSON.stringify({ action: 'save', rows })
+  });
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.error || 'Таблица не приняла запись');
+  return j;
+}
+async function getJSON(action) {
+  const res = await fetch(S.settings.url + (S.settings.url.includes('?') ? '&' : '?') + 'action=' + action);
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.error || 'Таблица ответила ошибкой');
+  return j;
+}
+
+let pushing = false;
+async function pushPending() {
+  if (!S.settings.url || pushing) return false;
+  const ds = Object.keys(S.entries).filter(d => S.entries[d].sync === 'pending' && hasData(S.entries[d]));
+  if (!ds.length) return true;
+  pushing = true;
+  const stamps = ds.map(d => S.entries[d].updatedAt);
+  try {
+    await post(ds.map(d => toRow(d, S.entries[d])));
+    ds.forEach((d, i) => { const x = S.entries[d]; if (x && x.sync === 'pending' && x.updatedAt === stamps[i]) x.sync = 'sent'; });
+    persist();
+    return true;
+  } catch (err) {
+    return false;
+  } finally {
+    pushing = false;
+    refresh();
+  }
+}
+
+$('#save').addEventListener('click', async () => {
+  if (!hasData(e)) return toast('Сначала ответьте хотя бы на один вопрос');
+  e.updatedAt = new Date().toISOString();
+  S.entries[cur] = e;
+  if (!S.settings.url) {
+    e.sync = 'local'; persist(); refresh();
+    return toast('Сохранено на этом телефоне. Таблица пока не подключена');
+  }
+  e.sync = 'pending'; persist();
+  const btn = $('#save');
+  btn.disabled = true; btn.textContent = 'Отправляем…';
+  const ok = await pushPending();
+  btn.disabled = false;
+  refresh();
+  toast(ok ? 'Сохранено в таблицу' : 'Сохранено на телефоне. В таблицу отправим, когда появится связь');
+});
+
+function refreshBadge() {
+  const b = $('#sync');
+  const wait = Object.keys(S.entries).filter(d => S.entries[d].sync === 'pending').length;
+  if (!S.settings.url) { b.textContent = 'Только на телефоне'; b.dataset.state = 'off'; }
+  else if (wait) { b.textContent = 'Ждут отправки: ' + wait; b.dataset.state = 'wait'; }
+  else { b.textContent = 'Таблица подключена'; b.dataset.state = 'ok'; }
+}
+$('#sync').addEventListener('click', async () => {
+  if (!S.settings.url) return showTab('settings');
+  const ok = await pushPending();
+  toast(ok ? 'Все сохранённые записи в таблице' : 'Нет связи с таблицей. Попробуйте позже');
+});
+
+/* ---------- Недели ---------- */
+let selW = null;
+const weeksView = $('#view-weeks');
+
+function weekStats(w) {
+  const days = Array.from({ length: 7 }, (_, i) => addDays(S.settings.start, (w - 1) * 7 + i));
+  const es = days.map(d => S.entries[d]).filter(x => x && hasData(x));
+  const avg = a => (a.length ? a.reduce((p, c) => p + c, 0) / a.length : null);
+  const vals = f => es.map(f).filter(v => v != null);
+  const bedAvg = avg(vals(x => tmin(x.bed)).map(eve));
+  const upAvg = avg(vals(x => tmin(x.up)));
+  const sleepAvg = avg(vals(x => x.sleep));
+  let tibAvg = null;
+  if (bedAvg != null && upAvg != null) {
+    tibAvg = upAvg + 1440 - bedAvg;
+    if (tibAvg > 1440) tibAvg -= 1440;
+    if (tibAvg <= 0) tibAvg = null;
+  }
+  return {
+    days, n: es.length,
+    napDays: es.filter(x => x.nap === 'y').length,
+    napAvg: avg(es.filter(x => x.nap === 'n' || (x.nap === 'y' && x.napMin != null)).map(x => (x.nap === 'y' ? x.napMin : 0))),
+    sportDays: es.filter(x => x.sport === 'y').length,
+    cigsAvg: avg(vals(x => x.cigs)),
+    alcDays: es.filter(x => x.alc === 'y').length,
+    pillDays: es.filter(x => x.pills === 'y').length,
+    bedAvg, lightsAvg: avg(vals(x => tmin(x.lights)).map(eve)),
+    solAvg: avg(vals(x => x.sol)), wakesAvg: avg(vals(x => x.wakes)), wasoAvg: avg(vals(x => x.waso)),
+    wakeAvg: avg(vals(x => tmin(x.wake))), upAvg, sleepAvg, qAvg: avg(vals(x => x.quality)), tibAvg,
+    eff: sleepAvg != null && tibAvg ? sleepAvg / tibAvg * 100 : null,
+    comments: days.filter(d => S.entries[d] && (S.entries[d].comment || '').trim()).map(d => [d, S.entries[d].comment.trim()])
+  };
+}
+
+function weekRows(st, prev) {
+  const now = weekVals(st);
+  const was = prev && prev.n ? weekVals(prev) : null;
+  return now.map((r, i) => [r[0], r[1], was && was[i][1] !== '—' ? was[i][1] : null]);
+}
+function weekVals(st) {
+  const of = n => `${n} из ${st.n} дн.`;
+  const rows = [
+    ['Дневной сон (п. 1)', st.napAvg == null ? of(st.napDays) : `${of(st.napDays)}, в среднем ${dec(st.napAvg)} мин в день`],
+    ['Спорт (п. 2)', of(st.sportDays)]
+  ];
+  if (S.settings.cigs) rows.push(['Сигарет в день (п. 3)', st.cigsAvg == null ? '—' : dec(st.cigsAvg)]);
+  rows.push(['Алкоголь (п. 4)', of(st.alcDays)]);
+  if (S.settings.pills) rows.push(['Снотворное (п. 5)', of(st.pillDays)]);
+  const t = v => (v == null ? '—' : clock(v)), mnt = v => (v == null ? '—' : dec(v) + ' мин');
+  rows.push(
+    ['Отход ко сну (п. 6)', t(st.bedAvg)],
+    ['Выключение света (п. 7)', t(st.lightsAvg)],
+    ['Засыпание (п. 8)', mnt(st.solAvg)],
+    ['Ночных пробуждений (п. 9)', st.wakesAvg == null ? '—' : dec(st.wakesAvg)],
+    ['Длительность пробуждений (п. 10)', mnt(st.wasoAvg)],
+    ['Окончательное пробуждение (п. 11)', t(st.wakeAvg)],
+    ['Подъём с постели (п. 12)', t(st.upAvg)],
+    ['Продолжительность сна (п. 13)', st.sleepAvg == null ? '—' : hm(st.sleepAvg)],
+    ['Качество сна (п. 14)', st.qAvg == null ? '—' : dec(st.qAvg) + ' из 5']
+  );
+  return rows;
+}
+
+function renderWeeks() {
+  const filled = Object.keys(S.entries).filter(d => hasData(S.entries[d])).map(weekOf);
+  const maxW = Math.max(8, weekOf(maxDay()), ...filled);
+  if (!selW || selW > maxW) selW = Math.min(Math.max(weekOf(cur), 1), maxW);
+  const st = weekStats(selW);
+  const prev = selW > 1 ? weekStats(selW - 1) : null;
+  const effs = Array.from({ length: maxW }, (_, i) => weekStats(i + 1).eff);
+  const trend = effs.some(v => v != null)
+    ? `<h2>Эффективность сна по неделям</h2>
+       <div class="trend" style="--cols:${maxW}">${effs.map((v, i) => `<button type="button" data-w="${i + 1}" aria-pressed="${i + 1 === selW}" aria-label="Неделя ${i + 1}, ${v != null ? Math.round(v) + '%' : 'нет данных'}">
+         <span class="tv">${v != null ? Math.round(v) + '%' : ''}</span><span class="tt${v != null ? '' : ' none'}">${v != null ? `<b style="height:${Math.min(100, v).toFixed(1)}%"></b>` : ''}</span><span class="td">${i + 1}</span></button>`).join('')}</div>
+       <p class="note">Пунктир на уровне 90%: с такой эффективности сон считается нормальным.</p>`
+    : '';
+  const chips = Array.from({ length: maxW }, (_, i) => `<button type="button" data-w="${i + 1}" aria-pressed="${i + 1 === selW}" aria-label="Неделя ${i + 1}">${i + 1}</button>`).join('');
+
+  const tibs = st.days.map(d => (S.entries[d] ? tib(S.entries[d]) : null));
+  const scale = Math.max(480, ...tibs.filter(Boolean), ...st.days.map(d => (S.entries[d] && S.entries[d].sleep) || 0));
+  const bars = st.days.map((d, i) => {
+    const x = S.entries[d], T = tibs[i], sl = x && x.sleep != null ? x.sleep : null;
+    const track = T == null && sl == null
+      ? '<span class="bt none"></span>'
+      : `<span class="bt">${T != null ? `<i style="height:${(T / scale * 100).toFixed(1)}%"></i>` : ''}${sl != null ? `<b style="height:${(Math.min(sl, T || sl) / scale * 100).toFixed(1)}%"></b>` : ''}</span>`;
+    const dd = parse(d);
+    return `<button type="button" class="bar" data-go="${d}" ${d === today() ? 'aria-current="true"' : ''} aria-label="${ruShort(d)}${sl != null ? ', сон ' + hmWords(sl) : ', нет записи'}">
+      <span class="bv">${sl != null ? hm(sl) : ''}</span>${track}<span class="bd">${DOW[dd.getDay()]}<br>${dd.getDate()}</span></button>`;
+  }).join('');
+
+  let body;
+  if (!st.n) {
+    body = `<p class="empty-note">За эту неделю пока нет записей. Нажмите на день, чтобы заполнить его.</p>`;
+  } else {
+    const effPart = st.eff == null
+      ? `<p class="effline">Индекс эффективности сна появится, когда будут указаны время отхода ко сну, время подъёма и продолжительность сна</p>`
+      : `<p class="effline">Индекс эффективности сна за неделю: ${Math.round(st.eff)}%</p>
+         <div class="band" role="img" aria-label="Доля сна во времени в постели"><i class="s" style="left:0;width:${Math.min(100, st.eff).toFixed(1)}%"></i></div>
+         <p class="cap">В среднем ${hmWords(st.sleepAvg)} сна из ${hmWords(st.tibAvg)} в постели.${prev && prev.eff != null ? ` Неделей раньше индекс был ${Math.round(prev.eff)}%.` : ''}</p>`;
+    const comments = st.comments.length
+      ? `<h2>Комментарии (п. 15)</h2><ul class="comments">${st.comments.map(c => `<li><b>${ruShort(c[0])}</b>${esc(c[1])}</li>`).join('')}</ul>` : '';
+    const rows = weekRows(st, prev);
+    body = `${effPart}
+      ${trend}
+      <h2>Средние за неделю</h2>
+      ${rows.some(r => r[2]) ? '<p class="secnote">Мелкой строкой показано значение предыдущей недели.</p>' : ''}
+      <dl class="avgs">${rows.map(r => `<div><dt>${r[0]}</dt><dd>${r[1]}${r[2] ? `<small>было ${r[2]}</small>` : ''}</dd></div>`).join('')}</dl>
+      ${comments}
+      <div class="btnstack"><button type="button" class="btn quiet" id="copyWeek">Скопировать итоги недели</button></div>`;
+  }
+
+  weeksView.innerHTML = `
+    <h1 class="viewhead">Неделя ${selW}</h1>
+    <div class="weekchips">${chips}</div>
+    <p class="period">${ru(st.days[0])} — ${ru(st.days[6])}. Заполнено ${st.n} из 7 дней</p>
+    <div class="bars">${bars}</div>
+    <div class="legend"><span style="--c:var(--sleep)">сон</span><span style="--c:var(--rest)">время в постели</span></div>
+    ${body}`;
+  const on = $('.weekchips button[aria-pressed="true"]', weeksView);
+  if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest', inline: 'center' });
+}
+
+function weekText(w) {
+  const st = weekStats(w);
+  const lines = [`Дневник сна. Неделя ${w} (${ru(st.days[0])} — ${ru(st.days[6])}), заполнено ${st.n} из 7 дней`];
+  const prev = w > 1 ? weekStats(w - 1) : null;
+  weekRows(st, prev).forEach(r => lines.push(r[0] + ': ' + r[1] + (r[2] ? ` (неделей раньше: ${r[2]})` : '')));
+  if (st.eff != null) lines.push(`Индекс эффективности сна: ${Math.round(st.eff)}% (сон ${hm(st.sleepAvg)} / в постели ${hm(st.tibAvg)})` + (prev && prev.eff != null ? `, неделей раньше: ${Math.round(prev.eff)}%` : ''));
+  if (st.comments.length) { lines.push('Комментарии (п. 15):'); st.comments.forEach(c => lines.push(ruShort(c[0]) + ': ' + c[1])); }
+  return lines.join('\n');
+}
+
+weeksView.addEventListener('click', async ev => {
+  const b = ev.target.closest('button');
+  if (!b) return;
+  if (b.dataset.w) { selW = +b.dataset.w; return renderWeeks(); }
+  if (b.dataset.go) {
+    if (b.dataset.go > maxDay()) return toast('Этот день ещё не наступил');
+    showTab('day'); return openDay(b.dataset.go);
+  }
+  if (b.id === 'copyWeek') toast((await copyText(weekText(selW))) ? 'Итоги недели скопированы' : 'Не получилось скопировать');
+});
+
+/* ---------- Настройки ---------- */
+function fillSettings() {
+  $('#url').value = S.settings.url;
+  $('#start').value = S.settings.start;
+  $('#optCigs').checked = S.settings.cigs;
+  $('#optPills').checked = S.settings.pills;
+  $('#shareCsv').hidden = !(navigator.canShare && window.File);
+}
+function urlNote(text) { $('#urlStatus').textContent = text; }
+
+$('#url').addEventListener('change', () => {
+  const v = $('#url').value.trim();
+  S.settings.url = v; persist(); refresh();
+  if (v && !/^https:\/\/script\.google\.com\/.+\/exec$/.test(v)) urlNote('Адрес должен начинаться с https://script.google.com/ и заканчиваться на /exec');
+  else urlNote(v ? 'Адрес сохранён. Нажмите «Проверить связь»' : '');
+});
+$('#testUrl').addEventListener('click', async () => {
+  if (!S.settings.url) return urlNote('Сначала вставьте адрес скрипта');
+  urlNote('Проверяем…');
+  try {
+    const j = await getJSON('ping');
+    urlNote(`Связь есть. Таблица «${j.name}», записей в ней: ${j.days}`);
+  } catch (err) {
+    urlNote('Таблица не отвечает. Проверьте адрес и то, что в развёртывании выбран доступ «Все»');
+  }
+});
+$('#pushAll').addEventListener('click', async () => {
+  if (!S.settings.url) return toast('Сначала вставьте адрес скрипта');
+  const ds = Object.keys(S.entries).filter(d => hasData(S.entries[d]));
+  if (!ds.length) return toast('На телефоне пока нет записей');
+  ds.forEach(d => { S.entries[d].sync = 'pending'; });
+  persist();
+  const ok = await pushPending();
+  toast(ok ? `В таблицу отправлено записей: ${ds.length}` : 'Нет связи с таблицей. Записи ждут отправки');
+});
+$('#pullAll').addEventListener('click', async () => {
+  if (!S.settings.url) return toast('Сначала вставьте адрес скрипта');
+  try {
+    const j = await getJSON('list');
+    let n = 0;
+    (j.rows || []).forEach(r => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) return;
+      const mine = S.entries[r.date];
+      if (mine && hasData(mine) && mine.sync !== 'sent') return;   // несохранённые правки на телефоне не трогаем
+      S.entries[r.date] = fromRow(r); n++;
+    });
+    persist();
+    e = S.entries[cur] || blank();
+    renderDay();
+    toast(`Загружено записей из таблицы: ${n}`);
+  } catch (err) {
+    toast('Не получилось загрузить записи. Проверьте связь с таблицей');
+  }
+});
+$('#start').addEventListener('change', () => {
+  const v = $('#start').value;
+  if (!v) { $('#start').value = S.settings.start; return; }
+  S.settings.start = v; persist(); selW = null;
+  openDay(today());
+  toast('Дни и недели пересчитаны. Чтобы обновить их в таблице, отправьте все записи заново');
+});
+$('#optCigs').addEventListener('change', ev => { S.settings.cigs = ev.target.checked; persist(); renderDay(); });
+$('#optPills').addEventListener('change', ev => { S.settings.pills = ev.target.checked; persist(); renderDay(); });
+
+const CSV_COLS = [['date', 'Дата'], ['dow', 'День недели'], ['day', 'День дневника'], ['week', 'Неделя'], ['nap', 'Дневной сон, мин (п. 1)'], ['napCnt', 'Дневной сон, раз (п. 1)'],
+  ['sport', 'Спорт (п. 2)'], ['cigs', 'Сигареты (п. 3)'], ['alcohol', 'Алкоголь (п. 4)'], ['pills', 'Снотворное (п. 5)'],
+  ['bed', 'Отход ко сну (п. 6)'], ['lights', 'Свет погашен (п. 7)'], ['sol', 'Засыпание, мин (п. 8)'], ['wakes', 'Пробуждений за ночь (п. 9)'],
+  ['waso', 'Пробуждения, мин (п. 10)'], ['wake', 'Окончательное пробуждение (п. 11)'], ['up', 'Подъём с постели (п. 12)'],
+  ['sleep', 'Сон по ощущениям, ч:мм (п. 13)'], ['quality', 'Качество сна, 1–5 (п. 14)'], ['comment', 'Комментарий (п. 15)'],
+  ['sleepMin', 'Сон, мин'], ['tibMin', 'В постели, мин'], ['eff', 'Эффективность сна, %'], ['updated', 'Обновлено']];
+function csv() {
+  const cell = v => { const s = String(v == null ? '' : v); return /[",\n;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const ds = Object.keys(S.entries).filter(d => hasData(S.entries[d])).sort();
+  const lines = [CSV_COLS.map(c => cell(c[1])).join(',')];
+  ds.forEach(d => { const r = toRow(d, S.entries[d]); lines.push(CSV_COLS.map(c => cell(r[c[0]])).join(',')); });
+  return { text: '\ufeff' + lines.join('\r\n'), count: ds.length, name: `dnevnik-sna-${today()}.csv` };
+}
+$('#dlCsv').addEventListener('click', () => {
+  const f = csv();
+  if (!f.count) return toast('На телефоне пока нет записей');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([f.text], { type: 'text/csv;charset=utf-8' }));
+  a.download = f.name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+});
+$('#shareCsv').addEventListener('click', async () => {
+  const f = csv();
+  if (!f.count) return toast('На телефоне пока нет записей');
+  try {
+    const file = new File([f.text], f.name, { type: 'text/csv' });
+    if (!navigator.canShare({ files: [file] })) throw new Error('no-share');
+    await navigator.share({ files: [file], title: 'Дневник сна' });
+  } catch (err) {
+    if (err && err.name === 'AbortError') return;
+    toast('Здесь нельзя поделиться файлом. Нажмите «Скачать файл»');
+  }
+});
+$('#wipe').addEventListener('click', () => {
+  if (!confirm('Стереть все записи дневника с этого телефона? Записи в Google Таблице останутся.')) return;
+  S.entries = {}; persist();
+  openDay(today());
+  toast('Дневник на телефоне очищен');
+});
+
+/* ---------- Общее ---------- */
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; }
+  catch (err) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy'); ta.remove();
+      return ok;
+    } catch (err2) { return false; }
+  }
+}
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3600);
+}
+function showTab(name) {
+  ['day', 'weeks', 'settings'].forEach(n => { $('#view-' + n).hidden = n !== name; });
+  $$('.tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === name ? 'true' : 'false'));
+  $('#savebar').hidden = name !== 'day';
+  if (name === 'weeks') renderWeeks();
+  if (name === 'settings') fillSettings();
+  window.scrollTo(0, 0);
+}
+$$('.tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+
+window.addEventListener('online', () => { pushPending(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  if (today() !== shownToday) { shownToday = today(); openDay(today()); }   // страницу оставили открытой до утра
+  pushPending();
+});
+
+renderDay();
+pushPending();
+})();
+</script>
+</body>
+</html>
